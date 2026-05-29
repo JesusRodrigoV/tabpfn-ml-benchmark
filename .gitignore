@@ -21,7 +21,6 @@ datasets_respaldo/
 !german_credit_data.csv
 
 # Generated figures
-figuras/
 
 # Environment
 .env
@@ -33,4 +32,3 @@ env/
 # OS
 .DS_Store
 Thumbs.db
-figuras/

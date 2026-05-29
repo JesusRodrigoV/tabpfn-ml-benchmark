@@ -81,6 +81,16 @@ def cargar_predicciones():
     if not combined:
         print("  No se encontraron predicciones. Ejecutá los notebooks primero.")
         sys.exit(1)
+
+    # Normalizar etiquetas de Crop: notebook 1 usa strings, notebook 2 usa enteros.
+    classes_c = combined.get("classes_c")
+    if classes_c is not None:
+        for k in ["y_test_c", "rf_preds_c", "gb_preds_c", "tabpfn_preds_c"]:
+            arr = combined.get(k)
+            if isinstance(arr, np.ndarray) and arr.ndim == 1 and len(arr) > 0:
+                if isinstance(arr[0], (int, np.integer)):
+                    combined[k] = np.array([classes_c[i] for i in arr], dtype=object)
+
     return combined
 
 
