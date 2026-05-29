@@ -23,6 +23,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import RobustScaler, OneHotEncoder, LabelEncoder
+from sklearn.preprocessing import OrdinalEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.metrics import (
@@ -33,7 +34,7 @@ from tabpfn import TabPFNClassifier
 
 # ── Config ──────────────────────────────────────────────────────────────
 RANDOM_STATE = 42
-TEST_SIZE = 0.2
+TEST_SIZE = 0.3
 os.environ["TABPFN_TOKEN"] = "tabpfn_sk_iPZbyLLnlUZKB1kKSHFg2Qu62IHXdl_NdvX8bGbL6V8"
 os.environ["TABPFN_ALLOW_CPU_LARGE_DATASET"] = "1"
 
@@ -105,12 +106,13 @@ def preprocess_german(df):
     y = df["Risk"].map({"good": 1, "bad": 0})
     num = X.select_dtypes(include=[np.number]).columns.tolist()
     cat = [c for c in X.select_dtypes(include=["object", "category"]).columns.tolist()]
+    # Note: OrdinalEncoder para consistencia con notebook2mio (TabPFN necesita numérico)
+    X[cat] = X[cat].fillna("Desconocido")
+    X[cat] = X[cat].astype(str)
+    encoder = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
+    X[cat] = encoder.fit_transform(X[cat])
     num_t = Pipeline([("imputer", SimpleImputer(strategy="median")), ("scaler", RobustScaler())])
-    cat_t = Pipeline([
-        ("imputer", SimpleImputer(strategy="most_frequent")),
-        ("onehot", OneHotEncoder(drop="first", handle_unknown="ignore", sparse_output=False)),
-    ])
-    preprocessor = ColumnTransformer([("num", num_t, num), ("cat", cat_t, cat)], verbose_feature_names_out=False)
+    preprocessor = ColumnTransformer([("num", num_t, num)], verbose_feature_names_out=False)
     return X, y, preprocessor
 
 
@@ -282,14 +284,15 @@ def plot_timing_comparison(all_metrics, save_name="03_timing_comparison.png"):
             bars = ax.bar(x + offset, vals, width, label=model if pidx == 1 else "",
                           color=color, edgecolor="white", linewidth=0.5)
             for bar, v in zip(bars, vals):
-                label = f"{v:.2f}s" if v >= 0.1 else f"{v*1000:.0f}ms"
-                ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
+                label = f"{v:.3f}s" if v >= 1.0 else (f"{v*1000:.0f}ms" if v >= 0.001 else f"{v*1e6:.0f}µs")
+                ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() * 1.05,
                         label, ha="center", va="bottom", fontsize=7.5)
 
         ax.set_xticks(x)
         ax.set_xticklabels(datasets, fontsize=10)
         ax.set_ylabel("Tiempo (s)")
         ax.set_title(f"{plabel} — Tiempo de Ejecución", fontweight="bold", pad=10)
+        ax.set_yscale("log")
         ax.grid(True, axis="y", alpha=0.25)
         if pidx == 1:
             ax.legend(framealpha=0.9, edgecolor="#ddd")
@@ -466,6 +469,17 @@ def main():
     plot_confusion_german(results_g, y_test_g, le_g)
     plot_topk_crop(all_metrics, y_test_c_enc, results_c.get("TabPFN"), le_c)
     plot_summary_table(all_metrics)
+
+    import csv
+    csv_path = os.path.join(OUTPUT_DIR, "resultados_metricas.csv")
+    with open(csv_path, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["Dataset", "Modelo", "Accuracy", "F1", "ROC-AUC", "Fit (s)", "Predict (s)"])
+        for ds_name, models in all_metrics.items():
+            for model_name, r in models.items():
+                w.writerow([ds_name, model_name, f"{r['acc']:.4f}", f"{r['f1']:.4f}",
+                            f"{r['auc']:.4f}", f"{r['fit_time']:.3f}", f"{r['pred_time']:.5f}"])
+    print(f"  → {csv_path}")
 
     print(f"\n✅ Listo. {len(os.listdir(OUTPUT_DIR))} gráficas en {OUTPUT_DIR}/")
 
