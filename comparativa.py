@@ -4,7 +4,7 @@ comparativa.py — Lee resultados de los notebooks y genera gráficas comparativ
 
 Uso:
     1. Ejecutar notebook1_baseline.ipynb  (entrena RF + GB)
-    2. Ejecutar notebook2mio.ipynb        (entrena TabPFN)
+    2. Ejecutar notebook2.ipynb           (entrena TabPFN)
     3. python comparativa.py              (genera gráficas)
 
 Requiere: numpy, pandas, matplotlib
@@ -50,19 +50,37 @@ plt.rcParams.update({
 RESULTADOS_DIR = "resultados"
 
 def cargar_metricas():
-    path = os.path.join(RESULTADOS_DIR, "metrics.json")
-    if not os.path.exists(path):
-        print(f"  No se encontró {path}. Ejecutá los notebooks primero.")
+    paths = [
+        os.path.join(RESULTADOS_DIR, "metrics_notebook1.json"),
+        os.path.join(RESULTADOS_DIR, "metrics_notebook2.json"),
+    ]
+    combined = {}
+    for p in paths:
+        if os.path.exists(p):
+            with open(p) as f:
+                data = json.load(f)
+            for ds, modelos in data.items():
+                if ds not in combined:
+                    combined[ds] = {}
+                combined[ds].update(modelos)
+    if not combined:
+        print("  No se encontraron métricas. Ejecutá los notebooks primero.")
         sys.exit(1)
-    with open(path) as f:
-        return json.load(f)
+    return combined
 
 def cargar_predicciones():
-    path = os.path.join(RESULTADOS_DIR, "preds.npz")
-    if not os.path.exists(path):
-        print(f"  No se encontró {path}. Ejecutá los notebooks primero.")
+    paths = [
+        os.path.join(RESULTADOS_DIR, "preds_notebook1.npz"),
+        os.path.join(RESULTADOS_DIR, "preds_notebook2.npz"),
+    ]
+    combined = {}
+    for p in paths:
+        if os.path.exists(p):
+            combined.update(dict(np.load(p, allow_pickle=True)))
+    if not combined:
+        print("  No se encontraron predicciones. Ejecutá los notebooks primero.")
         sys.exit(1)
-    return dict(np.load(path, allow_pickle=True))
+    return combined
 
 
 # ── Plot helpers ──
