@@ -212,6 +212,11 @@ def plot_timing_comparison(metrics, save_name="03_timing_comparison.png"):
         ax.set_ylabel("Tiempo (s)")
         ax.set_title(f"{plabel} — Tiempo de Ejecución", fontweight="bold", pad=10)
         ax.set_yscale("log")
+        # floor en el eje Y para evitar -inf con valores 0
+        all_vals = [data[d].get(model, {}).get(phase, 0) for d in datasets for model in modelos if model in data.get(d, {})]
+        non_zero = [v for v in all_vals if v > 0]
+        if non_zero:
+            ax.set_ylim(bottom=min(non_zero) / 10)
         ax.grid(True, axis="y", alpha=0.25)
         if pidx == 1:
             ax.legend(framealpha=0.9, edgecolor="#ddd")
