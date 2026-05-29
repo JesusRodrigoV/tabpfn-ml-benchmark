@@ -18,6 +18,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 from matplotlib.gridspec import GridSpec
+from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from math import pi
 
@@ -739,8 +740,8 @@ def plot_accuracy_vs_time(metrics, save_name="14_accuracy_vs_time.png"):
     ax.grid(True, alpha=0.25)
 
     legend_elements = [
-        Patch(facecolor="#555", label="German Credit", marker="o"),
-        Patch(facecolor="#555", label="Crop", marker="s"),
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='#555', label='German Credit'),
+        Line2D([0], [0], marker='s', color='w', markerfacecolor='#555', label='Crop'),
     ]
     for model in modelos:
         legend_elements.append(Patch(facecolor=MODEL_COLORS[model], label=model))
