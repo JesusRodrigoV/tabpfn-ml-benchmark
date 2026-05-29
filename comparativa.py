@@ -4,7 +4,7 @@ comparativa.py — Lee resultados de los notebooks y genera gráficas comparativ
 
 Uso:
     1. Ejecutar notebook1_baseline.ipynb  (entrena RF + GB)
-    2. Ejecutar notebook2.ipynb           (entrena TabPFN)
+     2. Ejecutar notebook2_tabPFN.ipynb    (entrena TabPFN)
     3. python comparativa.py              (genera gráficas)
 
 Requiere: numpy, pandas, matplotlib
